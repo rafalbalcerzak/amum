@@ -1,8 +1,11 @@
 import glob
+from re import X
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,AnnotationBbox)
+
+
 
 with open('animals.npz', 'rb') as f:
   animals = np.load(f)['animals']
@@ -10,6 +13,11 @@ with open('animals.npz', 'rb') as f:
 images = [matplotlib.image.imread(file) for file in glob.glob("animals/*.jpg")]
 
 fig, ax = plt.subplots()
+
+x = animals[:,2].astype(np.float64)
+y = animals[:,3].astype(np.float64)
+sc = ax.scatter(x,y)
+
 
 imgboxs = []
 for i in range(len(images)):
@@ -19,31 +27,35 @@ for i in range(len(images)):
 points =[]
 for i in range(len(images)):
     points.append(AnnotationBbox(
-        imgboxs[i], [1,1],
+        imgboxs[i],
+        xy = (x[i],y[i]),
         xycoords='data',
-        xybox=(float(animals[i,2]),float(animals[i,3])),
-        boxcoords="offset points",
-        arrowprops=dict(arrowstyle="->"))
+        xybox=(x[i],y[i]+10),
+        boxcoords="offset points")
         )
 
 for i in range(len(images)):
     ax.add_artist(points[i])
     points[i].set_visible(False)
 
-sc = ax.scatter(animals[:,2],animals[:,3])
+
+last = 0
 
 def fun(ev):
-    if sc.contains(ev)[0]:
-        print(int(sc.contains(ev)[1]['ind']))
-        points[int(sc.contains(ev)[1]['ind'])].set_visible(True)
-        plt.show()
-        
-    else:
-        print('f')
-        for i in range(len(images)):
-            ax.add_artist(points[i])
-            points[i].set_visible(False)
-        plt.show()
+    global last
+    if sc.contains(ev)[0] != last:
+        last = sc.contains(ev)[0]
+        if sc.contains(ev)[0]:
+            print(int(sc.contains(ev)[1]['ind']))
+            points[int(sc.contains(ev)[1]['ind'])].set_visible(True)
+            plt.show()
+            
+        else:
+            print('f')
+            for i in range(len(images)):
+                ax.add_artist(points[i])
+                points[i].set_visible(False)
+            plt.show()
 
 fig.canvas.mpl_connect('motion_notify_event',fun)
 plt.show()
